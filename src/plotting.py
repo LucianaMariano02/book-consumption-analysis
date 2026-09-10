@@ -21,20 +21,81 @@ def save_figure(fig, filename: str, output_dir: Path):
 
 
 def plot_segments_distribution(df, output_dir: Path):
-  """Gráfico de barras horizontales con el porcentaje por segmento."""
+  """Gráfico de barras horizontales limpio, con etiquetas en español y alto contraste."""
+  # Mapeo a español para consistencia editorial
+  label_es = {
+      'Print-only': 'Solo papel',
+      'Hybrid': 'Híbrido (Papel + Digital)',
+      'Non-reader': 'No lector',
+      'Digital/Audio-only': 'Solo digital / Audio',
+  }
+
   counts = df['reader_segment'].value_counts(normalize=True).mul(100).round(1)
+  counts.index = [label_es.get(idx, idx) for idx in counts.index]
 
-  fig, ax = plt.subplots(figsize=(8, 4))
-  bars = ax.barh(counts.index, counts.values, color=[PALETTE.get(x, '#333') for x in counts.index])
-  ax.set_title('Distribución de Segmentos de Lectores (% Población)', fontsize=13, weight='bold', pad=12)
-  ax.set_xlabel('Porcentaje (%)')
+  # Paleta accesible y con jerarquía visual (destaca los lectores)
+  colors = {
+      'Solo papel': '#2b5c8f',
+      'Híbrido (Papel + Digital)': '#d95f02',
+      'No lector': '#94a3b8',
+      'Solo digital / Audio': '#1b9e77',
+  }
+  bar_colors = [colors.get(cat, '#475569') for cat in counts.index]
 
+  fig, ax = plt.subplots(figsize=(9, 4.5), dpi=300)
+
+  # Barras con esquinas limpias y altura consistente
+  bars = ax.barh(
+      counts.index,
+      counts.values,
+      color=bar_colors,
+      height=0.6,
+      edgecolor='none',
+  )
+
+  # Título principal y subtítulo contextual
+  ax.text(
+      0,
+      3.8,
+      'Distribución de Segmentos de Lectura en la Población',
+      fontsize=14,
+      weight='bold',
+      color='#1e293b',
+  )
+  ax.text(
+      0,
+      3.55,
+      'Porcentaje sobre el total encuestado (Pew Research Center, N ≈ 2.800)',
+      fontsize=10.5,
+      color='#64748b',
+  )
+
+  # Etiquetas de datos directas sobre las barras
   for bar in bars:
     w = bar.get_width()
-    ax.text(w + 0.8, bar.get_y() + bar.get_height() / 2, f'{w:.1f}%', va='center', weight='bold')
+    ax.text(
+        w + 1.2,
+        bar.get_y() + bar.get_height() / 2,
+        f'{w:.1f}%',
+        va='center',
+        ha='left',
+        fontsize=11,
+        weight='bold',
+        color='#1e293b',
+    )
 
-  ax.set_xlim(0, max(counts.values) + 10)
-  sns.despine(top=True, right=True)
+  # Ajustes de espaciado y limpieza de bordes/grilla
+  ax.set_xlim(0, max(counts.values) + 12)
+  ax.set_ylim(-0.6, 4.1)
+  ax.tick_params(axis='y', labelsize=11, length=0, pad=10)
+  ax.tick_params(axis='x', bottom=False, labelbottom=False)  # Quita el eje X
+  ax.xaxis.grid(False)
+  ax.yaxis.grid(False)
+
+  # Eliminar marcos innecesarios
+  sns.despine(top=True, right=True, left=True, bottom=True)
+  plt.tight_layout()
+
   save_figure(fig, 'reader_segments_distribution.png', output_dir)
   return fig
 
